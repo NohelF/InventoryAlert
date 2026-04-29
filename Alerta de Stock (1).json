@@ -1,0 +1,229 @@
+{
+  "name": "Alerta de Stock",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1IyMPDZWdfoE8myrzuash0tfGWNPVhKx14y8EDeSeWWw/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 382542206,
+          "mode": "list",
+          "cachedResultName": "Stock",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IyMPDZWdfoE8myrzuash0tfGWNPVhKx14y8EDeSeWWw/edit#gid=382542206"
+        },
+        "options": {}
+      },
+      "id": "67da02a9-f29e-4536-adfe-f3abf1295f3f",
+      "name": "Leer Inventario",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        288,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qPTTmwf2GpMG6jlP",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json[\"🧩 Artículo\"] }}",
+              "rightValue": "={{ $json[\"Stock mínimo\"] }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "id": "eb3b37b5-69a5-4feb-9375-40da1aeb8d74"
+            },
+            {
+              "id": "1c615b75-6766-491f-b457-b3cf342c3855",
+              "leftValue": "={{ $json[\"🟢 Cantidad Disponible\"] }}",
+              "rightValue": "={{ $json[\"🔴Stock Minimo\"] }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "64281dbc-4997-4656-8846-cad1e32732c2",
+      "name": "Stock <= Mínimo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6186467269",
+        "text": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "429481fc-4c19-4fee-8e88-61725ece02b0",
+      "name": "Enviar Alerta Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        -144
+      ],
+      "webhookId": "e59cd1d2-8f88-4449-9001-65b9e08f2750",
+      "credentials": {
+        "telegramApi": {
+          "id": "Or0D3QFnL0GGiqOb",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "12bd630e-5284-4904-a099-bb25b5f62840",
+      "name": "Alerta Semanal",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mensaje-field",
+              "name": "mensaje",
+              "type": "string",
+              "value": "=⚠️ Stock bajo detectado\n\nProducto: {{ $json[\"🧩 Artículo\"] }}\nStock actual: {{ $json[\"🟢 Cantidad Disponible\"] }}\nStock mínimo: {{ $json[\"🔴Stock Minimo\"] }}\n\nAcción: Reabastecer inventario"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cec1e35f-af29-43b3-b805-7d3ce84384c0",
+      "name": "Envio de Alerta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "f22b1966-687a-4a25-8b1c-50c5a5cc7d8b",
+      "name": "Fin de flujo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        176
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Leer Inventario": {
+      "main": [
+        [
+          {
+            "node": "Stock <= Mínimo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stock <= Mínimo?": {
+      "main": [
+        [
+          {
+            "node": "Envio de Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fin de flujo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerta Semanal": {
+      "main": [
+        [
+          {
+            "node": "Leer Inventario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio de Alerta": {
+      "main": [
+        [
+          {
+            "node": "Enviar Alerta Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "32a20e9c-1de1-4d65-8d22-3139fabee10b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b913228af5cf0ec780f001cfc9f8497e3ddd5e5d9e3d7605702e04585f5db675"
+  },
+  "id": "0tXHor3fXulvqhZ3",
+  "tags": []
+}
